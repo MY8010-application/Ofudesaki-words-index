@@ -1,1 +1,423 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>単語索引</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Noto Sans JP", sans-serif;
+    background: #f5f6f8;
+    color: #263238;
+    min-height: 100vh;
+}
+
+header {
+    background: #263746;
+    color: white;
+    padding: 28px 20px;
+    text-align: center;
+}
+
+header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: 2px;
+}
+
+header p {
+    margin-top: 7px;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: #cbd5df;
+}
+
+.container {
+    max-width: 760px;
+    margin: 35px auto;
+    padding: 0 20px;
+}
+
+.search-box {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.label {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: block;
+}
+
+input {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    border: 1px solid #ccd3da;
+    border-radius: 7px;
+    outline: none;
+}
+
+input:focus {
+    border-color: #526f87;
+}
+
+.mode-area {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.mode-btn {
+    flex: 1;
+    padding: 11px;
+    border: 1px solid #ccd3da;
+    background: white;
+    border-radius: 7px;
+    font-size: 14px;
+    cursor: pointer;
+    color: #52616e;
+}
+
+.mode-btn.active {
+    background: #344d62;
+    border-color: #344d62;
+    color: white;
+}
+
+.search-btn {
+    width: 100%;
+    margin-top: 18px;
+    padding: 14px;
+    border: none;
+    border-radius: 7px;
+    background: #344d62;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.search-btn:hover {
+    background: #263746;
+}
+
+.search-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.result-area {
+    margin-top: 28px;
+}
+
+.result-info {
+    font-size: 14px;
+    color: #687783;
+    margin-bottom: 15px;
+}
+
+.word-card {
+    background: white;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.word-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #263746;
+}
+
+.issue-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 11px 0;
+    border-top: 1px solid #edf0f2;
+}
+
+.issue-name {
+    min-width: 48px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #526f87;
+    padding-top: 3px;
+}
+
+.issue-numbers {
+    font-size: 16px;
+    line-height: 1.7;
+    word-break: break-word;
+}
+
+.no-data {
+    color: #8b969e;
+    font-size: 14px;
+}
+
+.message {
+    background: white;
+    padding: 30px 15px;
+    border-radius: 10px;
+    text-align: center;
+    color: #7b8790;
+    font-size: 14px;
+}
+
+footer {
+    text-align: center;
+    padding: 30px 15px;
+    color: #9aa3aa;
+    font-size: 12px;
+}
+
+@media (max-width: 480px) {
+    header {
+        padding: 23px 15px;
+    }
+
+    header h1 {
+        font-size: 23px;
+    }
+
+    .container {
+        margin-top: 22px;
+        padding: 0 14px;
+    }
+
+    .search-box {
+        padding: 20px;
+    }
+
+    .word-card {
+        padding: 17px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>単語索引</h1>
+    <p>WORD INDEX</p>
+</header>
+
+<div class="container">
+
+    <div class="search-box">
+
+        <label class="label" for="keyword">
+            検索する語句
+        </label>
+
+        <input
+            type="text"
+            id="keyword"
+            placeholder="語句を入力してください"
+        >
+
+        <div class="mode-area">
+            <button
+                class="mode-btn active"
+                id="exactBtn"
+                onclick="setMode('exact')"
+            >
+                完全一致
+            </button>
+
+            <button
+                class="mode-btn"
+                id="partialBtn"
+                onclick="setMode('partial')"
+            >
+                含む
+            </button>
+        </div>
+
+        <button
+            class="search-btn"
+            id="searchBtn"
+            onclick="searchWord()"
+        >
+            検索
+        </button>
+
+    </div>
+
+    <div class="result-area" id="resultArea"></div>
+
+</div>
+
+<footer>
+    WORD INDEX
+</footer>
+
+<script>
+
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxOgcCba6SoxIyw77J_AhOQZeIKpgQDlml26X3EE4-z8Xg2SSqacKRzuFq8xIKR15MGww/exec";
+
+let searchMode = "exact";
+
+function setMode(mode) {
+
+    searchMode = mode;
+
+    document.getElementById("exactBtn")
+        .classList.toggle("active", mode === "exact");
+
+    document.getElementById("partialBtn")
+        .classList.toggle("active", mode === "partial");
+}
+
+async function searchWord() {
+
+    const keyword = document.getElementById("keyword").value.trim();
+    const resultArea = document.getElementById("resultArea");
+    const searchBtn = document.getElementById("searchBtn");
+
+    if (!keyword) {
+        resultArea.innerHTML =
+            '<div class="message">検索する語句を入力してください。</div>';
+        return;
+    }
+
+    searchBtn.disabled = true;
+    searchBtn.textContent = "検索中...";
+
+    resultArea.innerHTML =
+        '<div class="message">検索しています...</div>';
+
+    try {
+
+        const params = new URLSearchParams({
+            word: keyword,
+            mode: searchMode
+        });
+
+        const response = await fetch(
+            GAS_URL + "?" + params.toString()
+        );
+
+        if (!response.ok) {
+            throw new Error("通信に失敗しました");
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        displayResults(data.results || []);
+
+    } catch (error) {
+
+        resultArea.innerHTML =
+            '<div class="message">検索に失敗しました。時間をおいて再度お試しください。</div>';
+
+    } finally {
+
+        searchBtn.disabled = false;
+        searchBtn.textContent = "検索";
+    }
+}
+
+function displayResults(results) {
+
+    const resultArea = document.getElementById("resultArea");
+
+    if (results.length === 0) {
+        resultArea.innerHTML =
+            '<div class="message">該当する語句は見つかりませんでした。</div>';
+        return;
+    }
+
+    let html = `
+        <div class="result-info">
+            検索結果：${results.length}件
+        </div>
+    `;
+
+    results.forEach(item => {
+
+        html += `
+            <div class="word-card">
+
+                <div class="word-title">
+                    ${escapeHTML(item.word)}
+                </div>
+        `;
+
+        if (item.issues && item.issues.length > 0) {
+
+            item.issues.forEach(issue => {
+
+                html += `
+                    <div class="issue-row">
+                        <div class="issue-name">
+                            ${escapeHTML(issue.issue)}
+                        </div>
+
+                        <div class="issue-numbers">
+                            ${escapeHTML(issue.numbers)}
+                        </div>
+                    </div>
+                `;
+            });
+
+        } else {
+
+            html += `
+                <div class="no-data">
+                    番号の登録はありません。
+                </div>
+            `;
+        }
+
+        html += `
+            </div>
+        `;
+    });
+
+    resultArea.innerHTML = html;
+}
+
+function escapeHTML(value) {
+
+    return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[char]);
+}
+
+document.getElementById("keyword")
+    .addEventListener("keydown", function(event) {
+
+        if (event.key === "Enter") {
+            searchWord();
+        }
+    });
+
+</script>
+
+</body>
+</html>
