@@ -285,7 +285,8 @@ function setMode(mode) {
         .classList.toggle("active", mode === "partial");
 }
 
-async function searchWord() {
+
+function searchWord() {
 
     const keyword = document.getElementById("keyword").value.trim();
     const resultArea = document.getElementById("resultArea");
@@ -303,40 +304,61 @@ async function searchWord() {
     resultArea.innerHTML =
         '<div class="message">検索しています...</div>';
 
-    try {
+    const callbackName = "wordIndexCallback";
+    const params = new URLSearchParams({
+        word: keyword,
+        mode: searchMode,
+        callback: callbackName
+    });
 
-        const params = new URLSearchParams({
-            word: keyword,
-            mode: searchMode
-        });
+    const script = document.createElement("script");
+    script.src = GAS_URL + "?" + params.toString();
 
-        const response = await fetch(
-            GAS_URL + "?" + params.toString()
-        );
+    let finished = false;
 
-        if (!response.ok) {
-            throw new Error("通信に失敗しました");
-        }
+    function cleanup() {
+        if (finished) return;
+        finished = true;
 
-        const data = await response.json();
-
-        if (data.error) {
-            throw new Error(data.error);
-        }
-
-        displayResults(data.results || []);
-
-    } catch (error) {
-
-        resultArea.innerHTML =
-            '<div class="message">検索に失敗しました。時間をおいて再度お試しください。</div>';
-
-    } finally {
+        clearTimeout(timeoutId);
+        script.remove();
+        delete window[callbackName];
 
         searchBtn.disabled = false;
         searchBtn.textContent = "検索";
     }
+
+    window[callbackName] = function(data) {
+        cleanup();
+
+        if (data.error) {
+            resultArea.innerHTML =
+                '<div class="message">' +
+                escapeHTML(data.error) +
+                '</div>';
+            return;
+        }
+
+        displayResults(data.results || []);
+    };
+
+    script.onerror = function() {
+        cleanup();
+
+        resultArea.innerHTML =
+            '<div class="message">通信に失敗しました。再度お試しください。</div>';
+    };
+
+    const timeoutId = setTimeout(function() {
+        cleanup();
+
+        resultArea.innerHTML =
+            '<div class="message">通信がタイムアウトしました。</div>';
+    }, 15000);
+
+    document.body.appendChild(script);
 }
+
 
 function displayResults(results) {
 
