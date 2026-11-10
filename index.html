@@ -270,9 +270,28 @@ footer {
 
 <script>
 
-const GAS_URL = "https://script.google.com/macros/s/AKfycbxOgcCba6SoxIyw77J_AhOQZeIKpgQDlml26X3EE4-z8Xg2SSqacKRzuFq8xIKR15MGww/exec";
+const JSON_URL = "https://raw.githubusercontent.com/MY8010-application/Ofudesaki-words-index/refs/heads/main/words.json";
 
+let wordData = [];
+let dataLoaded = false;
 let searchMode = "exact";
+
+fetch(JSON_URL)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("JSONの読み込みに失敗しました");
+        }
+        return response.json();
+    })
+    .then(data => {
+        wordData = data.results || [];
+        dataLoaded = true;
+    })
+    .catch(error => {
+        console.error(error);
+        document.getElementById("resultArea").innerHTML =
+            '<div class="message">単語データを読み込めませんでした。ページを再読み込みしてください。</div>';
+    });
 
 function setMode(mode) {
 
