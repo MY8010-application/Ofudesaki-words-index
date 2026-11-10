@@ -317,65 +317,28 @@ function searchWord() {
         return;
     }
 
+    if (!dataLoaded) {
+        resultArea.innerHTML =
+            '<div class="message">単語データを読み込んでいます。少し待ってから再度お試しください。</div>';
+        return;
+    }
+
     searchBtn.disabled = true;
     searchBtn.textContent = "検索中...";
 
-    resultArea.innerHTML =
-        '<div class="message">検索しています...</div>';
+    const results = wordData.filter(item => {
 
-    const callbackName = "wordIndexCallback";
-    const params = new URLSearchParams({
-        word: keyword,
-        mode: searchMode,
-        callback: callbackName
-    });
-
-    const script = document.createElement("script");
-    script.src = GAS_URL + "?" + params.toString();
-
-    let finished = false;
-
-    function cleanup() {
-        if (finished) return;
-        finished = true;
-
-        clearTimeout(timeoutId);
-        script.remove();
-        delete window[callbackName];
-
-        searchBtn.disabled = false;
-        searchBtn.textContent = "検索";
-    }
-
-    window[callbackName] = function(data) {
-        cleanup();
-
-        if (data.error) {
-            resultArea.innerHTML =
-                '<div class="message">' +
-                escapeHTML(data.error) +
-                '</div>';
-            return;
+        if (searchMode === "partial") {
+            return item.word.includes(keyword);
         }
 
-        displayResults(data.results || []);
-    };
+        return item.word === keyword;
+    });
 
-    script.onerror = function() {
-        cleanup();
+    displayResults(results);
 
-        resultArea.innerHTML =
-            '<div class="message">通信に失敗しました。再度お試しください。</div>';
-    };
-
-    const timeoutId = setTimeout(function() {
-        cleanup();
-
-        resultArea.innerHTML =
-            '<div class="message">通信がタイムアウトしました。</div>';
-    }, 15000);
-
-    document.body.appendChild(script);
+    searchBtn.disabled = false;
+    searchBtn.textContent = "検索";
 }
 
 
